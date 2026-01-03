@@ -1,0 +1,331 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    min-height: 100vh;
+}
+
+/* Login Screen */
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+}
+
+.login-card {
+    background-color: #2a2a2a;
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border: 1px solid #404040;
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.login-header p {
+    color: #ccc;
+    font-size: 1rem;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #e0e0e0;
+    font-size: 14px;
+}
+
+.form-group input {
+    padding: 12px 16px;
+    border: 2px solid #404040;
+    border-radius: 8px;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007acc;
+    box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.1);
+}
+
+.login-btn {
+    background: linear-gradient(135deg, #007acc 0%, #0056b3 100%);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 122, 204, 0.3);
+}
+
+.error-message {
+    background-color: #dc3545;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+    margin-top: 16px;
+}
+
+/* Email Composer */
+.email-composer {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.composer-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.composer-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.composer-content {
+    background-color: #2a2a2a;
+    border-radius: 12px;
+    padding: 30px;
+    border: 1px solid #404040;
+}
+
+/* Tabs */
+.tabs-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #404040;
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #888;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+    color: #e0e0e0;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+    color: #007acc;
+    border-bottom-color: #007acc;
+    background-color: rgba(0, 122, 204, 0.1);
+}
+
+.email-field {
+    margin-bottom: 20px;
+}
+
+.email-field label {
+    display: block;
+    font-weight: 600;
+    color: #888;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.field-value {
+    color: #e0e0e0;
+    font-size: 16px;
+    padding: 12px;
+    background-color: #1a1a1a;
+    border-radius: 6px;
+    display: block;
+}
+
+.field-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #404040;
+    border-radius: 8px;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.field-input:focus {
+    outline: none;
+    border-color: #007acc;
+    box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.1);
+}
+
+.field-input[readonly] {
+    background-color: #333;
+    color: #999;
+    cursor: not-allowed;
+    border-color: #555;
+}
+
+.field-input[readonly]:focus {
+    border-color: #555;
+    box-shadow: none;
+}
+
+.email-body {
+    width: 100%;
+    min-height: 300px;
+    padding: 16px;
+    border: 2px solid #404040;
+    border-radius: 8px;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    font-size: 16px;
+    font-family: inherit;
+    line-height: 1.6;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.email-body:focus {
+    border-color: #007acc;
+    box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.1);
+}
+
+.email-body:empty:before {
+    content: attr(placeholder);
+    color: #888;
+    pointer-events: none;
+}
+
+.speech-btn {
+    background-color: #404040;
+    border: 2px solid #555;
+    color: #e0e0e0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.speech-btn:hover {
+    background-color: #555;
+    border-color: #666;
+    transform: translateY(-1px);
+}
+
+.speech-btn:active {
+    transform: translateY(0);
+}
+
+.composer-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+    justify-content: flex-end;
+}
+
+.send-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.send-btn:hover:not(:disabled) {
+    background-color: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.send-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.logout-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logout-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .email-composer {
+        padding: 20px 15px;
+    }
+    
+    .composer-content {
+        padding: 20px;
+    }
+    
+    .login-card {
+        margin: 20px;
+        padding: 30px;
+    }
+}

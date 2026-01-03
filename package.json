@@ -1,0 +1,40 @@
+{
+  "name": "highfivespirits",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "scraper-server": "node scraper-server.js",
+    "dev": "tsc src/main.ts --outDir src --target es2020 --module es2020 --watch & node server.js",
+    "build": "tsc src/main.ts --outDir src --target es2020 --module es2020",
+    "build:start": "npm run build && npm start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mwcooper44/highfivespirits.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mwcooper44/highfivespirits/issues"
+  },
+  "homepage": "https://github.com/mwcooper44/highfivespirits#readme",
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.7"
+  }
+}

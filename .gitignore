@@ -1,0 +1,49 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Build outputs
+dist/
+build/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
+
+# Sensitive files
+allowed_emails.txt
+
+# Node version (if downloaded)
+node-v20.11.0-darwin-arm64/
+
+# Test files
+test-*.js
+test-*.html
+test-*.py
+
+# Documentation that's not needed
+*.md
+!README.md
+
+# Old/unused files
+*.png
+*.jpg
+*.jpeg
+sample_*.json

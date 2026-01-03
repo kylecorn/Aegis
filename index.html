@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gmail Email Sender</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Simple Login (only shown if env vars not set) -->
+    <div id="login-screen" class="login-container" style="display: none;">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>Gmail Email Sender</h1>
+                <p>Enter your Gmail credentials</p>
+            </div>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="email">Gmail Address</label>
+                    <input type="email" id="email" name="email" placeholder="yourname@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="app-password">App Password</label>
+                    <input type="password" id="app-password" name="app-password" placeholder="16-character app password" required>
+                    <small style="color: #666; font-size: 12px; margin-top: 4px; display: block;">
+                        Use your 16-character Gmail App Password<br>
+                        <a href="https://support.google.com/accounts/answer/185833" target="_blank" style="color: #007acc;">How to create an App Password</a>
+                    </small>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+                <div id="login-error" class="error-message" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Email Composer -->
+    <div id="email-composer" class="email-composer" style="display: none;">
+        <div class="composer-header">
+            <h1>Gmail Email Sender</h1>
+        </div>
+        
+        <div class="composer-content">
+            <!-- Tabs -->
+            <div class="tabs-container">
+                <button class="tab-btn active" data-tab="1" data-subject="Schedule Request">Schedule Request</button>
+                <button class="tab-btn" data-tab="2" data-subject="Substitution Needed">Emergency Help</button>
+            </div>
+            
+            <div class="email-field" style="display: none;">
+                <label>Subject:</label>
+                <input type="text" id="subject" class="field-input" value="Schedule Request" readonly>
+            </div>
+            
+            <div class="email-field">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <label>Message:</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button id="speech-btn" class="speech-btn" title="Start voice input (Tip: Speak clearly in a quiet environment)">
+                            <span id="speech-icon">🎤</span>
+                            <span id="speech-status" style="display: none; margin-left: 8px; font-size: 12px; color: #007acc;">Listening...</span>
+                        </button>
+                        <small id="speech-tip" style="color: #888; font-size: 11px; display: none;">💡 Speak clearly, pause between sentences</small>
+                    </div>
+                </div>
+                <div id="email-body" class="email-body" contenteditable="true" placeholder="Type your message here..."></div>
+            </div>
+            
+            <div class="composer-actions">
+                <button id="send-btn" class="send-btn">Send Email</button>
+                <button id="logout-btn" class="logout-btn" style="display: none;">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
