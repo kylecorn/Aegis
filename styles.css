@@ -248,14 +248,30 @@ body {
     background-color: #404040;
     border: 2px solid #555;
     color: #e0e0e0;
-    padding: 8px 16px;
+    padding: 8px 12px;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    user-select: none; /* Prevent text selection on button */
+    -webkit-user-select: none;
+    white-space: nowrap; /* Prevent button text from wrapping */
+}
+
+.speech-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+}
+
+.speech-icon svg {
+    width: 16px;
+    height: 16px;
 }
 
 .speech-btn:hover {
@@ -312,6 +328,128 @@ body {
 
 .logout-btn:hover {
     background-color: #5a6268;
+}
+
+/* AI Assistant View */
+.ai-assistant-view {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px;
+    padding: 20px;
+}
+
+.ai-assistant-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.ai-circle-indicator {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.ai-circle-indicator:hover {
+    transform: scale(1.05);
+}
+
+.ai-circle-indicator:active {
+    transform: scale(0.95);
+}
+
+.ai-circle-inner {
+    position: relative;
+    z-index: 3;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007acc 0%, #0056b3 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 4px 20px rgba(0, 122, 204, 0.4);
+    transition: all 0.3s;
+}
+
+.ai-circle-indicator:hover .ai-circle-inner {
+    box-shadow: 0 6px 30px rgba(0, 122, 204, 0.6);
+    background: linear-gradient(135deg, #0088e6 0%, #0066cc 100%);
+}
+
+.ai-circle-indicator.listening .ai-circle-inner {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.ai-circle-ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid #007acc;
+    opacity: 0;
+    animation: ripple 2s ease-out infinite;
+}
+
+.ai-circle-ripple:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+.ai-circle-ripple:nth-child(3) {
+    animation-delay: 1s;
+}
+
+.ai-circle-indicator.listening .ai-circle-ripple {
+    border-color: #dc3545;
+    animation: ripple 1.5s ease-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+@keyframes ripple {
+    0% {
+        width: 80px;
+        height: 80px;
+        opacity: 0.8;
+    }
+    100% {
+        width: 160px;
+        height: 160px;
+        opacity: 0;
+    }
+}
+
+.ai-assistant-status {
+    color: #888;
+    font-size: 16px;
+    text-align: center;
+    margin: 0;
+    transition: color 0.3s;
+}
+
+.ai-circle-indicator.listening + .ai-assistant-status,
+.ai-assistant-container:has(.ai-circle-indicator.listening) .ai-assistant-status {
+    color: #dc3545;
 }
 
 /* Responsive */

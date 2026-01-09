@@ -5,6 +5,8 @@ class EmailSender {
         this.recognition = null;
         this.isListening = false;
         this.finalTranscript = ''; // Track final transcript to avoid duplicates
+        this.silenceTimeout = null; // Timeout for 5-second silence detection
+        this.lastSpeechTime = null; // Track when speech was last detected
         this.init();
     }
 
@@ -78,6 +80,15 @@ class EmailSender {
         if (speechBtn) {
             speechBtn.addEventListener('click', () => this.toggleSpeechRecognition());
         }
+
+        // AI Assistant circle indicator
+        const aiCircle = document.getElementById('ai-circle-indicator');
+        if (aiCircle) {
+            aiCircle.addEventListener('click', () => {
+                // TODO: Add AI interaction logic here
+                console.log('AI Assistant clicked');
+            });
+        }
     }
 
     initSpeechRecognition() {
@@ -112,7 +123,11 @@ class EmailSender {
         this.recognition.onstart = () => {
             this.isListening = true;
             this.finalTranscript = ''; // Reset on start
+            this.lastSpeechTime = Date.now(); // Track when we started
             this.updateSpeechButton(true);
+            
+            // Start silence detection timeout (5 seconds)
+            this.startSilenceTimeout();
             
             // Show tip
             const tip = document.getElementById('speech-tip');
@@ -124,15 +139,26 @@ class EmailSender {
         this.recognition.onresult = (event) => {
             let interimTranscript = '';
             let newFinalTranscript = '';
+            let hasSpeech = false;
 
             // Process only new results (from resultIndex onwards)
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 const transcript = event.results[i][0].transcript;
+                if (transcript.trim().length > 0) {
+                    hasSpeech = true;
+                }
                 if (event.results[i].isFinal) {
                     newFinalTranscript += transcript + ' ';
                 } else {
                     interimTranscript += transcript;
                 }
+            }
+
+            // Always update last speech time when we get ANY result (even interim)
+            // This ensures the 5-second timer resets on any speech activity
+            if (hasSpeech || interimTranscript.trim().length > 0 || newFinalTranscript.trim().length > 0) {
+                this.lastSpeechTime = Date.now();
+                this.startSilenceTimeout(); // Restart the 5-second timer
             }
 
             // Add new final transcript to our tracked final transcript
@@ -159,22 +185,66 @@ class EmailSender {
 
         this.recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
+            
+            // Clear silence timeout on error
+            this.clearSilenceTimeout();
+            
+            // Don't stop on 'no-speech' errors - let our silence timeout handle it
             if (event.error === 'no-speech') {
-                this.showAlert('No speech detected. Please speak louder or check your microphone.', 'error');
+                // Ignore no-speech errors - our timeout will handle silence
+                return;
             } else if (event.error === 'not-allowed') {
                 this.showAlert('Microphone access denied. Please enable microphone permissions in your browser settings.', 'error');
+                this.stopSpeechRecognition();
             } else if (event.error === 'audio-capture') {
                 this.showAlert('No microphone found. Please connect a microphone and try again.', 'error');
+                this.stopSpeechRecognition();
             } else if (event.error === 'network') {
                 this.showAlert('Network error. Please check your internet connection.', 'error');
+                this.stopSpeechRecognition();
             } else {
                 this.showAlert('Speech recognition error. Please try again.', 'error');
+                this.stopSpeechRecognition();
             }
-            this.stopSpeechRecognition();
         };
 
         this.recognition.onend = () => {
-            this.stopSpeechRecognition();
+            // The browser's speech recognition automatically ends after detecting speech
+            // We need to restart it to keep listening, unless we've had 5 seconds of silence
+            if (this.isListening) {
+                // Check if it's been 5 seconds since last speech
+                const timeSinceLastSpeech = Date.now() - (this.lastSpeechTime || Date.now());
+                
+                if (timeSinceLastSpeech >= 5000) {
+                    // It's been 5+ seconds of silence, stop naturally
+                    console.log('Stopping after 5 seconds of silence');
+                    this.stopSpeechRecognition();
+                } else {
+                    // Restart recognition immediately to keep listening
+                    // Use a small delay to avoid restart errors
+                    setTimeout(() => {
+                        if (this.isListening) {
+                            try {
+                                console.log('Restarting recognition to continue listening...');
+                                this.recognition.start();
+                            } catch (e) {
+                                // If we can't restart (might already be starting), try again
+                                if (e.message && !e.message.includes('already started')) {
+                                    setTimeout(() => {
+                                        if (this.isListening) {
+                                            try {
+                                                this.recognition.start();
+                                            } catch (e2) {
+                                                console.log('Second restart attempt failed:', e2.message);
+                                            }
+                                        }
+                                    }, 200);
+                                }
+                            }
+                        }
+                    }, 100);
+                }
+            }
         };
     }
 
@@ -185,7 +255,8 @@ class EmailSender {
         }
 
         if (this.isListening) {
-            this.recognition.stop();
+            // User clicked to stop - call stopSpeechRecognition to properly clean up
+            this.stopSpeechRecognition();
         } else {
             try {
                 this.recognition.start();
@@ -196,18 +267,54 @@ class EmailSender {
         }
     }
 
+    startSilenceTimeout() {
+        // Clear any existing timeout
+        this.clearSilenceTimeout();
+        
+        // Set a new timeout for 5 seconds
+        this.silenceTimeout = setTimeout(() => {
+            if (this.isListening) {
+                console.log('5 seconds of silence detected, stopping recognition');
+                this.stopSpeechRecognition();
+            }
+        }, 5000);
+    }
+
+    clearSilenceTimeout() {
+        if (this.silenceTimeout) {
+            clearTimeout(this.silenceTimeout);
+            this.silenceTimeout = null;
+        }
+    }
+
     stopSpeechRecognition() {
+        // Clear silence timeout
+        this.clearSilenceTimeout();
+        
         if (this.recognition && this.isListening) {
-            this.recognition.stop();
+            try {
+                this.recognition.stop();
+            } catch (e) {
+                // Ignore errors if already stopped
+                console.log('Recognition already stopped');
+            }
         }
         this.isListening = false;
-        this.finalTranscript = ''; // Reset when stopped
+        this.lastSpeechTime = null;
+        // Don't reset finalTranscript - keep the text that was transcribed
         this.updateSpeechButton(false);
         
         // Hide tip
         const tip = document.getElementById('speech-tip');
         if (tip) {
             tip.style.display = 'none';
+        }
+        
+        // Ensure button stays visible
+        const speechBtn = document.getElementById('speech-btn');
+        if (speechBtn) {
+            speechBtn.style.display = 'flex';
+            speechBtn.style.visibility = 'visible';
         }
     }
 
@@ -217,13 +324,20 @@ class EmailSender {
         const speechStatus = document.getElementById('speech-status');
         
         if (speechBtn && speechIcon && speechStatus) {
+            // Always ensure button is visible
+            speechBtn.style.display = 'flex';
+            speechBtn.style.visibility = 'visible';
+            speechBtn.style.opacity = '1';
+            
             if (listening) {
                 speechBtn.style.backgroundColor = '#dc3545';
-                speechIcon.textContent = '⏹️';
+                // Change to stop icon
+                speechIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>';
                 speechStatus.style.display = 'inline';
             } else {
                 speechBtn.style.backgroundColor = '';
-                speechIcon.textContent = '🎤';
+                // Change back to microphone icon
+                speechIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>';
                 speechStatus.style.display = 'none';
             }
         }
@@ -240,6 +354,27 @@ class EmailSender {
         const subjectField = document.getElementById('subject');
         if (subjectField) {
             subjectField.value = subject;
+        }
+
+        // Show/hide appropriate views based on tab
+        const aiAssistantView = document.getElementById('ai-assistant-view');
+        const messageBoxView = document.getElementById('message-box-view');
+        const aiPreviewView = document.getElementById('ai-preview-view');
+        
+        // Hide all views first
+        if (aiAssistantView) aiAssistantView.style.display = 'none';
+        if (messageBoxView) messageBoxView.style.display = 'none';
+        if (aiPreviewView) aiPreviewView.style.display = 'none';
+        
+        if (tabNumber === '1') {
+            // AI Assistant tab - show circle indicator
+            if (aiAssistantView) aiAssistantView.style.display = 'block';
+        } else if (tabNumber === '4') {
+            // AI Preview tab - show preview
+            if (aiPreviewView) aiPreviewView.style.display = 'block';
+        } else {
+            // Other tabs (2 & 3) - show message box
+            if (messageBoxView) messageBoxView.style.display = 'block';
         }
     }
 
@@ -280,7 +415,7 @@ class EmailSender {
         document.getElementById('email-composer').style.display = 'block';
 
         // Initialize with first tab selected
-        this.switchTab('1', 'Schedule Request');
+        this.switchTab('1', 'AI Assistant');
 
         // Show logout button if using login credentials
         const logoutBtn = document.getElementById('logout-btn');
@@ -308,14 +443,41 @@ class EmailSender {
 
         const sendBtn = document.getElementById('send-btn');
         const originalText = sendBtn.textContent;
-        sendBtn.textContent = 'Sending...';
+        sendBtn.textContent = 'Processing with AI...';
         sendBtn.disabled = true;
 
         try {
+            // Step 1: Get AI-generated message
+            const aiResponse = await fetch('/api/generate-ai-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    subject: subject,
+                    originalMessage: body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() // Plain text version
+                })
+            });
+
+            const aiResult = await aiResponse.json();
+            
+            if (!aiResult.success) {
+                throw new Error(aiResult.error || 'Failed to generate AI message');
+            }
+
+            // Update AI preview tab with the generated message
+            const aiPreviewBody = document.getElementById('ai-preview-body');
+            if (aiPreviewBody) {
+                aiPreviewBody.innerHTML = aiResult.aiMessage.replace(/\n/g, '<br>');
+            }
+
+            // Step 2: Send the AI-generated email
+            sendBtn.textContent = 'Sending...';
+            
             const formData = new FormData();
             formData.append('to', to);
             formData.append('subject', subject);
-            formData.append('body', body);
+            formData.append('body', aiResult.aiMessage.replace(/\n/g, '<br>'));
             
             // Add email settings if we have them (from login)
             // If not, server will use environment variables
@@ -334,12 +496,14 @@ class EmailSender {
                 this.showAlert('Email sent successfully to kylcorn@umich.edu!', 'success');
                 // Clear message only (subject is hardcoded per tab)
                 document.getElementById('email-body').innerHTML = '';
+                // Switch to AI Preview tab to show what was sent
+                this.switchTab('4', 'AI Preview');
             } else {
                 this.showAlert('Failed to send email: ' + result.error, 'error');
             }
         } catch (error) {
             console.error('Error sending email:', error);
-            this.showAlert('Network error. Please try again.', 'error');
+            this.showAlert('Error sending email: ' + error.message, 'error');
         } finally {
             sendBtn.textContent = originalText;
             sendBtn.disabled = false;

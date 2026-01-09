@@ -4,6 +4,20 @@ const path = require('path');
 const multer = require('multer');
 require('dotenv').config();
 
+// Google Gemini AI
+let genAI = null;
+try {
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    if (process.env.GOOGLE_API_KEY) {
+        genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+        console.log('✅ Google Gemini AI initialized');
+    } else {
+        console.log('⚠️  GOOGLE_API_KEY not found. AI message generation will not work.');
+    }
+} catch (error) {
+    console.warn('⚠️  Google Gemini AI not available:', error.message);
+}
+
 let nodemailer;
 try {
     nodemailer = require('nodemailer');
@@ -149,6 +163,85 @@ app.post('/api/send-email', upload.array('attachments', 10), async (req, res) =>
         res.status(500).json({ 
             success: false, 
             error: error.message || 'Failed to send email' 
+        });
+    }
+});
+
+// API endpoint to generate AI message
+app.post('/api/generate-ai-message', async (req, res) => {
+    try {
+        const { subject, originalMessage } = req.body;
+
+        if (!subject || !originalMessage) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields: subject, originalMessage'
+            });
+        }
+
+        if (!genAI) {
+            return res.status(503).json({
+                success: false,
+                error: 'AI service not configured. Please set GOOGLE_API_KEY in your .env file.'
+            });
+        }
+
+        console.log('🤖 AI Message Generation Request:');
+        console.log('  Subject:', subject);
+        console.log('  Original Message:', originalMessage);
+
+        // Use Gemini to rewrite the message
+        // Try gemini-1.5-flash first (better free tier support)
+        // Fallback to gemini-2.0-flash-exp if needed
+        let model;
+        try {
+            model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        } catch (e) {
+            // Fallback to 2.0 if 1.5 not available
+            model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+        }
+
+        const prompt = `You are an email writing assistant. Rewrite the following message into a professional, clear, and concise email format.
+
+Subject: ${subject}
+Original Message: ${originalMessage}
+
+Please rewrite this message in a professional email format. Keep the core meaning and intent, but make it more polished and appropriate for email communication. Return only the rewritten message text, without any additional commentary or labels.`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const aiMessage = response.text().trim();
+
+        console.log('✅ AI message generated successfully');
+
+        res.json({
+            success: true,
+            aiMessage: aiMessage,
+            originalMessage: originalMessage
+        });
+
+    } catch (error) {
+        console.error('❌ Error generating AI message:', error);
+        
+        // Provide helpful error messages for common issues
+        let errorMessage = error.message || 'Failed to generate AI message';
+        
+        if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('Quota exceeded')) {
+            errorMessage = 'API quota exceeded. This usually means:\n' +
+                '1. You need to set up billing (even for free tier)\n' +
+                '2. You\'ve hit the rate limit - wait a minute and try again\n' +
+                '3. Check your quota at: https://ai.dev/rate-limit\n\n' +
+                'To set up billing safely:\n' +
+                '- Go to Google Cloud Console\n' +
+                '- Set a spending limit (e.g., $0 or $5)\n' +
+                '- Free tier includes 15 requests/minute';
+        } else if (errorMessage.includes('API key') || errorMessage.includes('401') || errorMessage.includes('403')) {
+            errorMessage = 'Invalid API key. Please check your GOOGLE_API_KEY in .env file.';
+        }
+        
+        res.status(500).json({
+            success: false,
+            error: errorMessage
         });
     }
 });

@@ -42,27 +42,64 @@
         <div class="composer-content">
             <!-- Tabs -->
             <div class="tabs-container">
-                <button class="tab-btn active" data-tab="1" data-subject="Schedule Request">Schedule Request</button>
-                <button class="tab-btn" data-tab="2" data-subject="Substitution Needed">Emergency Help</button>
+                <button class="tab-btn active" data-tab="1" data-subject="AI Assistant">AI Assistant</button>
+                <button class="tab-btn" data-tab="2" data-subject="Schedule Request">Schedule Request</button>
+                <button class="tab-btn" data-tab="3" data-subject="Substitution Needed">Emergency Help</button>
+                <button class="tab-btn" data-tab="4" data-subject="AI Preview">AI Preview</button>
             </div>
             
             <div class="email-field" style="display: none;">
                 <label>Subject:</label>
-                <input type="text" id="subject" class="field-input" value="Schedule Request" readonly>
+                <input type="text" id="subject" class="field-input" value="AI Assistant" readonly>
             </div>
             
-            <div class="email-field">
+            <!-- AI Assistant View (Tab 1) -->
+            <div id="ai-assistant-view" class="ai-assistant-view">
+                <div class="ai-assistant-container">
+                    <div id="ai-circle-indicator" class="ai-circle-indicator">
+                        <div class="ai-circle-inner">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </div>
+                        <div class="ai-circle-ripple"></div>
+                        <div class="ai-circle-ripple"></div>
+                        <div class="ai-circle-ripple"></div>
+                    </div>
+                    <p class="ai-assistant-status" id="ai-assistant-status">Click to talk to AI Assistant</p>
+                </div>
+            </div>
+            
+            <!-- Message Box View (Tabs 2 & 3) -->
+            <div id="message-box-view" class="email-field" style="display: none;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                     <label>Message:</label>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <button id="speech-btn" class="speech-btn" title="Start voice input (Tip: Speak clearly in a quiet environment)">
-                            <span id="speech-icon">🎤</span>
-                            <span id="speech-status" style="display: none; margin-left: 8px; font-size: 12px; color: #007acc;">Listening...</span>
-                        </button>
-                        <small id="speech-tip" style="color: #888; font-size: 11px; display: none;">💡 Speak clearly, pause between sentences</small>
-                    </div>
+                    <button id="speech-btn" class="speech-btn" title="Start/Stop voice input (Tip: Speak clearly in a quiet environment)">
+                        <span id="speech-icon" class="speech-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </span>
+                        <span id="speech-status" style="display: none; margin-left: 8px; font-size: 12px; color: #007acc;">Listening...</span>
+                    </button>
                 </div>
                 <div id="email-body" class="email-body" contenteditable="true" placeholder="Type your message here..."></div>
+                <small id="speech-tip" style="color: #888; font-size: 11px; display: none; margin-top: 4px;">💡 Speak clearly, pause between sentences</small>
+            </div>
+            
+            <!-- AI Preview View (Tab 4) -->
+            <div id="ai-preview-view" class="email-field" style="display: none;">
+                <label>AI-Generated Message Preview:</label>
+                <div id="ai-preview-body" class="email-body" style="min-height: 300px; padding: 16px; background-color: #1a1a1a; border: 2px solid #404040; border-radius: 8px; color: #e0e0e0; font-size: 16px; line-height: 1.6;">
+                    <p style="color: #888; font-style: italic;">Send an email from another tab to see the AI-generated version here...</p>
+                </div>
+                <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">This is what the AI will generate before sending. Click "Send Email" from another tab to generate a preview.</small>
             </div>
             
             <div class="composer-actions">
