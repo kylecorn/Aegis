@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Aegis Mail">
+  <rect width="512" height="512" rx="96" fill="#1a1a1a"/>
+  <path fill="#28a745" d="M96 176h320v24L256 312 96 200v-24zm0 48v192h320V224l-96 72-64 48-64-48-96-72z"/>
+  <path fill="#e0e0e0" fill-opacity=".35" d="M96 176l160 120L416 176"/>
+</svg>

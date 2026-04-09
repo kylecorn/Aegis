@@ -13,7 +13,8 @@
     "dev": "tsc src/main.ts --outDir src --target es2020 --module es2020 --watch & node server.js",
     "build": "tsc src/main.ts --outDir src --target es2020 --module es2020",
     "build:start": "npm run build && npm start",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "list-gemini-models": "node scripts/list-gemini-models.js"
   },
   "repository": {
     "type": "git",
@@ -36,6 +37,6 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "multer": "^1.4.5-lts.1",
-    "nodemailer": "^6.9.7"
+    "nodemailer": "^8.0.5"
   }
 }

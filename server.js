@@ -36,6 +36,12 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+app.get('/manifest.json', (req, res) => {
+    res.type('application/manifest+json');
+    res.sendFile(path.join(__dirname, 'manifest.json'));
+});
+
 app.use(express.static('.'));
 
 // Email configuration helper
@@ -190,23 +196,74 @@ app.post('/api/generate-ai-message', async (req, res) => {
         console.log('  Subject:', subject);
         console.log('  Original Message:', originalMessage);
 
-        // Use Gemini to rewrite the message
-        // Try gemini-1.5-flash first (better free tier support)
-        // Fallback to gemini-2.0-flash-exp if needed
-        let model;
-        try {
-            model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        } catch (e) {
-            // Fallback to 2.0 if 1.5 not available
-            model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-        }
+        // Single model, single request — set GEMINI_MODEL in .env (see https://ai.google.dev/gemini-api/docs/models).
+        const modelName = (process.env.GEMINI_MODEL || 'gemini-2.5-flash').trim();
+        console.log('  Model:', modelName, '(override with GEMINI_MODEL in .env)');
 
-        const prompt = `You are an email writing assistant. Rewrite the following message into a professional, clear, and concise email format.
+        // Use the same format instructions as AiInterpreter.py
+        const format_instructions = `I want you to act as an AI assistant helping me with scheduling.
+Your main purpose is to first deduce the type of request you are receiving, and then based 
+on that you will output a response in a specific format. 
 
-Subject: ${subject}
-Original Message: ${originalMessage}
+The first type of request is "Schedule Request". Schedule Request is designed to trigger 
+a request for a schedule for a specified period of time. If you identify the request as 
+being something along these lines, please respond by assessing what the user is requesting 
+(what time period they want the schedule for) and then reiterate it using this specific format: 
+"Create a schedule for {date1} - {date2}." where date1/date2 are in the format of month/day/year.
+If I wanted a schedule from November 3rd to November 9th 2025, the format output should be 
+"Create a schedule for 11/03/2025 - 11/09/2025.". After you've responded with the reiteration 
+in the specific format, please ask the user to confirm whether or not your reiteration is correct.
+When asking for the confirmation use a more casual tone, you don't need to say it exactly in the 
+format of the first line you will reply with/type out
 
-Please rewrite this message in a professional email format. Keep the core meaning and intent, but make it more polished and appropriate for email communication. Return only the rewritten message text, without any additional commentary or labels.`;
+The second form of request is "Substitution Needed". Substitution Needed is designed to help the 
+user find help on short notice, typically when someone is calling out sick or something comes up. 
+If you identify the request as being something along these lines, please respond by assessing what 
+the user is requesting (which person called out sick today) and reiterate their request using this 
+specific format: "{NameOfPerson} called out sick today.". NameOfPerson should be something like 
+"Lifeguard" followed by a number. If Lifeguard 4 calls out sick, the response you give should be 
+"Lifeguard #4 called out sick today.". After you've responded with the reiteration in the specific 
+format, please ask the user to confirm whether or not your reiteration is correct. When asking for 
+the confirmation use a more casual tone, you don't need to say it exactly in the format of the first 
+line you will reply with/type out
+
+Last, if you don't identify the prompt given to you as being a request for you to do one of the 
+earlier requests, I want you to act like a normal assistant who will talk and respond with casual 
+talking and engage in conversations. If the user is talking to you a lot, casually ask if they 
+need assistance with anything or if they want to just continue casually chatting.
+
+The way that you should respond to the rest of my prompts (until I tell you to stop) is by first 
+writing the request type, then on the next line you should respond to me in the ways that I asked.`;
+
+        // Get current date and time for context
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        };
+        const currentDateTime = now.toLocaleDateString('en-US', options);
+        const currentDate = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+        const currentTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+        const model = genAI.getGenerativeModel({ model: modelName });
+
+        const prompt = `${format_instructions}
+
+Current Context:
+- Today's date and time: ${currentDateTime}
+- Today's date: ${currentDate}
+- Current time: ${currentTime}
+
+When the user refers to "today", "now", or relative dates, use the current date and time information above.
+
+User's message: "${originalMessage}"
+
+Please process this message according to the instructions above.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -225,29 +282,41 @@ Please rewrite this message in a professional email format. Keep the core meanin
         
         // Provide helpful error messages for common issues
         let errorMessage = error.message || 'Failed to generate AI message';
+        let statusCode = 500;
         
-        if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('Quota exceeded')) {
-            errorMessage = 'API quota exceeded. This usually means:\n' +
-                '1. You need to set up billing (even for free tier)\n' +
-                '2. You\'ve hit the rate limit - wait a minute and try again\n' +
-                '3. Check your quota at: https://ai.dev/rate-limit\n\n' +
-                'To set up billing safely:\n' +
-                '- Go to Google Cloud Console\n' +
-                '- Set a spending limit (e.g., $0 or $5)\n' +
-                '- Free tier includes 15 requests/minute';
+        if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+            errorMessage = 'Gemini model not found. Check GEMINI_MODEL in .env matches a model your key can use.\n' +
+                'Run: npm run list-gemini-models\n' +
+                'Docs: https://ai.google.dev/gemini-api/docs/models';
+            statusCode = 404;
+        } else if (
+            errorMessage.includes('429') ||
+            errorMessage.includes('quota') ||
+            errorMessage.includes('Quota exceeded') ||
+            errorMessage.includes('credit') ||
+            errorMessage.includes('billing') ||
+            errorMessage.includes('prepayment')
+        ) {
+            errorMessage = 'Gemini API billing or quota issue (HTTP 429). Common causes:\n' +
+                '1. Prepaid credits are used up — open https://aistudio.google.com/ → your project → billing / usage\n' +
+                '2. Rate limit — wait a minute and retry\n' +
+                '3. Enable or top up billing in Google Cloud for the project linked to this API key\n\n' +
+                'Details from Google: ' + errorMessage.split('\n')[0];
+            statusCode = 429;
         } else if (errorMessage.includes('API key') || errorMessage.includes('401') || errorMessage.includes('403')) {
             errorMessage = 'Invalid API key. Please check your GOOGLE_API_KEY in .env file.';
+            statusCode = 401;
         }
         
-        res.status(500).json({
+        res.status(statusCode).json({
             success: false,
             error: errorMessage
         });
     }
 });
 
-// Start the server
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+// Start the server locally only (Vercel invokes the exported app; do not listen there)
+if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`✅ Gmail Email Sender running at http://localhost:${PORT}`);
     });

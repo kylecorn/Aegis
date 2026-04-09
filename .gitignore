@@ -42,6 +42,9 @@ test-*.py
 *.md
 !README.md
 
+# PWA icons (tracked)
+!icons/
+
 # Old/unused files
 *.png
 *.jpg

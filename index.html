@@ -2,8 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gmail Email Sender</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="description" content="AI-assisted scheduling email assistant">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Aegis">
+    <title>Aegis Mail</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icons/icon.svg">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +19,7 @@
     <div id="login-screen" class="login-container" style="display: none;">
         <div class="login-card">
             <div class="login-header">
-                <h1>Gmail Email Sender</h1>
+                <h1>Aegis Mail</h1>
                 <p>Enter your Gmail credentials</p>
             </div>
             <form id="login-form" class="login-form">
@@ -36,7 +44,7 @@
     <!-- Email Composer -->
     <div id="email-composer" class="email-composer" style="display: none;">
         <div class="composer-header">
-            <h1>Gmail Email Sender</h1>
+            <h1>Aegis Mail</h1>
         </div>
         
         <div class="composer-content">
@@ -48,7 +56,7 @@
                 <button class="tab-btn" data-tab="4" data-subject="AI Preview">AI Preview</button>
             </div>
             
-            <div class="email-field" style="display: none;">
+            <div class="email-field">
                 <label>Subject:</label>
                 <input type="text" id="subject" class="field-input" value="AI Assistant" readonly>
             </div>
@@ -99,11 +107,11 @@
                 <div id="ai-preview-body" class="email-body" style="min-height: 300px; padding: 16px; background-color: #1a1a1a; border: 2px solid #404040; border-radius: 8px; color: #e0e0e0; font-size: 16px; line-height: 1.6;">
                     <p style="color: #888; font-style: italic;">Send an email from another tab to see the AI-generated version here...</p>
                 </div>
-                <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">This is what the AI will generate before sending. Click "Send Email" from another tab to generate a preview.</small>
+                <small style="color: #888; font-size: 11px; margin-top: 4px; display: block;">After you send once, the preview stays here — you can click Send Email again on this tab to resend it (no re-type needed).</small>
             </div>
             
             <div class="composer-actions">
-                <button id="send-btn" class="send-btn">Send Email</button>
+                <button type="button" id="send-btn" class="send-btn">Send Email</button>
                 <button id="logout-btn" class="logout-btn" style="display: none;">Logout</button>
             </div>
         </div>

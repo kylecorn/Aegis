@@ -7,6 +7,9 @@ class EmailSender {
         this.finalTranscript = ''; // Track final transcript to avoid duplicates
         this.silenceTimeout = null; // Timeout for 5-second silence detection
         this.lastSpeechTime = null; // Track when speech was last detected
+        /** Subject line that matches the current AI preview (avoids wrong subject after switching tabs). */
+        this.previewSubjectForSend = null;
+        this._sendInFlight = false;
         this.init();
     }
 
@@ -55,7 +58,11 @@ class EmailSender {
         // Send button
         const sendBtn = document.getElementById('send-btn');
         if (sendBtn) {
-            sendBtn.addEventListener('click', () => this.sendEmail());
+            sendBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.sendEmail();
+            });
         }
 
         // Logout button
@@ -350,10 +357,13 @@ class EmailSender {
         });
         document.querySelector(`[data-tab="${tabNumber}"]`).classList.add('active');
 
-        // Update subject field (read-only)
-        const subjectField = document.getElementById('subject');
-        if (subjectField) {
-            subjectField.value = subject;
+        // Update subject for tabs 1–3 only. Tab 4 (AI Preview) keeps the last real subject
+        // so "Send Email" still uses e.g. "Schedule Request", not "AI Preview".
+        if (tabNumber !== '4') {
+            const subjectField = document.getElementById('subject');
+            if (subjectField) {
+                subjectField.value = subject;
+            }
         }
 
         // Show/hide appropriate views based on tab
@@ -430,57 +440,98 @@ class EmailSender {
         this.showLogin();
     }
 
+    plainFromHtml(html) {
+        const d = document.createElement('div');
+        d.innerHTML = html || '';
+        return (d.textContent || d.innerText || '')
+            .replace(/\u00a0/g, ' ')
+            .trim();
+    }
+
+    isAiPreviewPlaceholder(previewEl) {
+        if (!previewEl) return true;
+        const t = (previewEl.textContent || '').trim();
+        return !t || t.includes('Send an email from another tab');
+    }
+
     async sendEmail() {
+        if (this._sendInFlight) {
+            return;
+        }
+
         // Always send to kylcorn@umich.edu
         const to = 'kylcorn@umich.edu';
-        const subject = document.getElementById('subject').value.trim();
-        const body = document.getElementById('email-body').innerHTML;
+        const subjectFromTab = document.getElementById('subject').value.trim();
+        const emailBodyEl = document.getElementById('email-body');
+        const previewEl = document.getElementById('ai-preview-body');
 
-        if (!subject || !body) {
-            this.showAlert('Please fill in subject and message', 'error');
+        const composePlain = this.plainFromHtml(emailBodyEl.innerHTML);
+        const previewPlain = previewEl ? this.plainFromHtml(previewEl.innerHTML) : '';
+        const previewUsable = previewPlain && !this.isAiPreviewPlaceholder(previewEl);
+
+        if (!subjectFromTab) {
+            this.showAlert('Please select a tab so the subject is set (e.g. Schedule Request).', 'error');
+            return;
+        }
+
+        if (!composePlain && !previewUsable) {
+            this.showAlert('Please fill in a message on Schedule Request / Emergency Help, or generate a preview first.', 'error');
             return;
         }
 
         const sendBtn = document.getElementById('send-btn');
         const originalText = sendBtn.textContent;
-        sendBtn.textContent = 'Processing with AI...';
+        this._sendInFlight = true;
         sendBtn.disabled = true;
 
         try {
-            // Step 1: Get AI-generated message
-            const aiResponse = await fetch('/api/generate-ai-message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    subject: subject,
-                    originalMessage: body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() // Plain text version
-                })
-            });
+            let bodyHtmlForEmail;
+            /** Subject line for SMTP (must match the AI preview when resending from preview tab). */
+            let subjectForMail;
 
-            const aiResult = await aiResponse.json();
-            
-            if (!aiResult.success) {
-                throw new Error(aiResult.error || 'Failed to generate AI message');
+            if (composePlain) {
+                // Normal path: user typed in compose box → run AI then send
+                sendBtn.textContent = 'Processing with AI...';
+                const body = emailBodyEl.innerHTML;
+                const aiResponse = await fetch('/api/generate-ai-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        subject: subjectFromTab,
+                        originalMessage: body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+                    })
+                });
+
+                const aiResult = await aiResponse.json();
+
+                if (!aiResult.success) {
+                    throw new Error(aiResult.error || 'Failed to generate AI message');
+                }
+
+                if (previewEl) {
+                    previewEl.innerHTML = aiResult.aiMessage.replace(/\n/g, '<br>');
+                }
+
+                bodyHtmlForEmail = aiResult.aiMessage.replace(/\n/g, '<br>');
+                this.previewSubjectForSend = subjectFromTab;
+                subjectForMail = subjectFromTab;
+            } else {
+                // Compose was cleared after a prior send; user is on AI Preview — send preview as-is (no second AI call).
+                // Use the subject that was used when this preview was generated, not the current tab (e.g. Emergency Help).
+                sendBtn.textContent = 'Sending...';
+                bodyHtmlForEmail = previewEl.innerHTML;
+                subjectForMail = this.previewSubjectForSend || subjectFromTab;
             }
 
-            // Update AI preview tab with the generated message
-            const aiPreviewBody = document.getElementById('ai-preview-body');
-            if (aiPreviewBody) {
-                aiPreviewBody.innerHTML = aiResult.aiMessage.replace(/\n/g, '<br>');
-            }
-
-            // Step 2: Send the AI-generated email
             sendBtn.textContent = 'Sending...';
-            
+
             const formData = new FormData();
             formData.append('to', to);
-            formData.append('subject', subject);
-            formData.append('body', aiResult.aiMessage.replace(/\n/g, '<br>'));
-            
-            // Add email settings if we have them (from login)
-            // If not, server will use environment variables
+            formData.append('subject', subjectForMail);
+            formData.append('body', bodyHtmlForEmail);
+
             if (this.emailSettings) {
                 formData.append('userEmailSettings', JSON.stringify(this.emailSettings));
             }
@@ -494,9 +545,7 @@ class EmailSender {
 
             if (result.success) {
                 this.showAlert('Email sent successfully to kylcorn@umich.edu!', 'success');
-                // Clear message only (subject is hardcoded per tab)
-                document.getElementById('email-body').innerHTML = '';
-                // Switch to AI Preview tab to show what was sent
+                emailBodyEl.innerHTML = '';
                 this.switchTab('4', 'AI Preview');
             } else {
                 this.showAlert('Failed to send email: ' + result.error, 'error');
@@ -505,6 +554,7 @@ class EmailSender {
             console.error('Error sending email:', error);
             this.showAlert('Error sending email: ' + error.message, 'error');
         } finally {
+            this._sendInFlight = false;
             sendBtn.textContent = originalText;
             sendBtn.disabled = false;
         }
